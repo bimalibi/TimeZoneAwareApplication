@@ -41,6 +41,14 @@ public class CurrentUserProvider : ICurrentUserProvider
         return DateTime.Parse(localDateTime);
     }
 
+    public DateTime ConvertDateTimeToUserTimeZone(long userId, DateTime utcDate)
+    {
+        var userTimeZone = _dbContext.UserTimeZones.FirstOrDefault(x => x.UserId == userId);
+        if (userTimeZone == null) return utcDate;
+        var localDateTime = GetDateTimeBasedOn(userTimeZone.TimeZone, utcDate);
+        return DateTime.Parse(localDateTime);
+    }
+
     private string GetDateTimeBasedOn(string timeZone, DateTime utcDate)
     {
         var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);

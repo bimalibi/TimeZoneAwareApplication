@@ -30,6 +30,7 @@ public static class MeetingEndpoints
                     Description = m.Description,
                     DateTime = m.StartDateTime,
                     Invited = iu.UserName,
+                    InvitedId = iu.Id,
                     Creator = cu.UserName
                 }).ToListAsync();
 
@@ -40,7 +41,8 @@ public static class MeetingEndpoints
                 Description = x.Description,
                 Creator = x.Creator,
                 Invited = x.Invited,
-                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime)
+                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime),
+                InvitedDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.InvitedId, x.DateTime)
             });
         }).WithTags("Meetings").RequireAuthorization();
 
