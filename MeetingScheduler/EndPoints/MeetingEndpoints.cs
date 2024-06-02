@@ -14,27 +14,34 @@ public static class MeetingEndpoints
     {
         app.MapPost("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingFilterPayload payload) =>
         {
-            var meetings = await dbContext.Meetings
-                .Where(m => (payload.Title == null || m.Title.Contains(payload.Title)) &&
-                            (payload.Description == null || m.Description.Contains(payload.Description)) &&
-                            (payload.StartDateTime == null || m.StartDateTime >= payload.StartDateTime.Value.TryParseUtc()))
-                .Select(x => new
-                {
-                    Id = x.Id,
-                    Title = x.Title,
-                    Description = x.Description,
-                    DateTime = x.StartDateTime,
-                })
-                .ToListAsync();
+            var currentUser = currentUserProvider.GetCurrentUserId();
 
-            return meetings.Select(x => new
+            var query = from m in dbContext.Meetings
+                join iu in dbContext.AppUsers on m.InvitedUserId equals iu.Id
+                join cu in dbContext.AppUsers on m.CreatorId equals cu.Id
+                where (payload.Title == null || m.Title.Contains(payload.Title)) &&
+                      (payload.Description == null || m.Description.Contains(payload.Description)) &&
+                      (payload.StartDateTime == null || m.StartDateTime >= payload.StartDateTime.Value.TryParseUtc()) &&
+                      (m.CreatorId == currentUser || m.InvitedUserId == currentUser)
+                select new
+                {
+                    Id = m.Id,
+                    Title = m.Title,
+                    Description = m.Description,
+                    DateTime = m.StartDateTime,
+                    Invited = iu.UserName,
+                    Creator = cu.UserName
+                };
+
+            return query.Select(x => new
             {
                 Id = x.Id,
                 Title = x.Title,
                 Description = x.Description,
-                DateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime)
+                Creator = x.Creator,
+                Invited = x.Invited,
+                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime)
             });
-            
         }).WithTags("Meetings").RequireAuthorization();
 
         app.MapPost("/api/meetings/Create", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingPayload meetingPayload) =>
