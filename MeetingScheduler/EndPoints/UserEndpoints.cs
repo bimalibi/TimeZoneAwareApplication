@@ -17,9 +17,11 @@ public static class UserEndpoints
             return Results.Ok(new { userId, userTimeZone });
         }).WithTags("User").RequireAuthorization();
 
-        app.MapGet("/api/users", async (AppDbContext dbContext) =>
+        app.MapGet("/api/users", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider) =>
         {
+            var currentUserId = currentUserProvider.GetCurrentUserId();
             return await dbContext.AppUsers
+                .Where(x => x.Id != currentUserId)
                 .Select(x => new
                 {
                     x.Id,

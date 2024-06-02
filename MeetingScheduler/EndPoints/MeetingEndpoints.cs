@@ -19,6 +19,8 @@ public static class MeetingEndpoints
             var query = await (from m in dbContext.Meetings
                 join iu in dbContext.AppUsers on m.InvitedUserId equals iu.Id
                 join cu in dbContext.AppUsers on m.CreatorId equals cu.Id
+               join iutj in dbContext.UserTimeZones on m.InvitedUserId equals iutj.UserId into iutjGroup
+                from iutj in iutjGroup.DefaultIfEmpty()
                 where (payload.Title == null || m.Title.Contains(payload.Title)) &&
                       (payload.Description == null || m.Description.Contains(payload.Description)) &&
                       (payload.StartDateTime == null || m.StartDateTime >= payload.StartDateTime.Value.TryParseUtc()) &&
@@ -31,8 +33,11 @@ public static class MeetingEndpoints
                     DateTime = m.StartDateTime,
                     Invited = iu.UserName,
                     InvitedId = iu.Id,
-                    Creator = cu.UserName
+                    CreatorId = cu.Id,
+                    Creator = cu.UserName,
+                    InvitedUserTimeZone = iutj.TimeZone
                 }).ToListAsync();
+
 
             return query.Select(x => new
             {
@@ -41,7 +46,8 @@ public static class MeetingEndpoints
                 Description = x.Description,
                 Creator = x.Creator,
                 Invited = x.Invited,
-                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime),
+                x.InvitedUserTimeZone,
+                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.CreatorId,x.DateTime),
                 InvitedDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.InvitedId, x.DateTime)
             });
         }).WithTags("Meetings").RequireAuthorization();
