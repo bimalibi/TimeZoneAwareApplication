@@ -56,6 +56,7 @@ var app = builder.Build();
 app.MapIdentityApi<AppUser>();
 app.MapUserEndpoints();
 app.MapTimezoneEndpoints();
+app.MapMeetingEndpoints();
 app.MapGet("/Hello", () => "Congratulations, You are authorizes").RequireAuthorization();
 
 app.UseSwagger();
