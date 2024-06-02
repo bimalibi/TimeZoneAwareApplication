@@ -33,6 +33,14 @@ public static class TimezoneEndpoints
             return Results.Created($"/api/timezones/{userTimeZone.Id}", userTimeZone);
         }).WithTags("Timezones").RequireAuthorization();
         
+        app.MapGet("/api/timezone/{userId}", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider) =>
+        {
+            var userId = currentUserProvider.GetCurrentUserId();
+            var userTimeZone = await dbContext.UserTimeZones
+                .FirstOrDefaultAsync(ut => ut.UserId == userId);
+            return userTimeZone;
+        }).WithTags("Timezones").RequireAuthorization();
+        
         return app;
     }
 }
