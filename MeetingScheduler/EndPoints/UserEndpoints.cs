@@ -30,6 +30,17 @@ public static class UserEndpoints
                 .ToListAsync();
         }).WithTags("User").RequireAuthorization();
 
+        app.MapGet("/api/users", async (AppDbContext dbContext) =>
+        {
+            return await dbContext.AppUsers
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Email,
+                    x.UserName
+                })
+                .ToListAsync();
+        }).WithTags("User").RequireAuthorization();
         return app;
     }
 }
