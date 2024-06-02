@@ -16,7 +16,7 @@ public static class MeetingEndpoints
         {
             var currentUser = currentUserProvider.GetCurrentUserId();
 
-            var query = from m in dbContext.Meetings
+            var query = await (from m in dbContext.Meetings
                 join iu in dbContext.AppUsers on m.InvitedUserId equals iu.Id
                 join cu in dbContext.AppUsers on m.CreatorId equals cu.Id
                 where (payload.Title == null || m.Title.Contains(payload.Title)) &&
@@ -31,7 +31,7 @@ public static class MeetingEndpoints
                     DateTime = m.StartDateTime,
                     Invited = iu.UserName,
                     Creator = cu.UserName
-                };
+                }).ToListAsync();
 
             return query.Select(x => new
             {
