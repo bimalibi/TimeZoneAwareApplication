@@ -34,7 +34,7 @@ public class CurrentUserProvider : ICurrentUserProvider
     }
 
 
-    public DateTime GetDateTime(DateTime utcDate)
+    public DateTime ConvertDateTimeToUserTimeZone(DateTime utcDate)
     {
         var userTimeZone = UserTimeZone();
         var localDateTime = GetDateTimeBasedOn(userTimeZone, utcDate);

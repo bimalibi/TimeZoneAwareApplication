@@ -12,26 +12,32 @@ public static class MeetingEndpoints
 {
     public static WebApplication MapMeetingEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingFilterPayload payload) =>
+        app.MapPost("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingFilterPayload payload) =>
         {
-            var startDate = currentUserProvider.GetDateTime(payload.StartDateTime ?? DateTime.UtcNow);
-
             var meetings = await dbContext.Meetings
                 .Where(m => (payload.Title == null || m.Title.Contains(payload.Title)) &&
                             (payload.Description == null || m.Description.Contains(payload.Description)) &&
-                            (payload.StartDateTime == null || m.StartDateTime >= startDate))
+                            (payload.StartDateTime == null || m.StartDateTime >= payload.StartDateTime.Value.TryParseUtc()))
                 .Select(x => new
                 {
                     Id = x.Id,
                     Title = x.Title,
                     Description = x.Description,
-                    DateTime = currentUserProvider.GetDateTime(x.StartDateTime),
+                    DateTime = x.StartDateTime,
                 })
                 .ToListAsync();
-            return meetings;
+
+            return meetings.Select(x => new
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Description = x.Description,
+                DateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.DateTime)
+            });
+            
         }).WithTags("Meetings").RequireAuthorization();
 
-        app.MapPost("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingPayload meetingPayload) =>
+        app.MapPost("/api/meetings/Create", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingPayload meetingPayload) =>
         {
             var meeting = new Meeting
             {

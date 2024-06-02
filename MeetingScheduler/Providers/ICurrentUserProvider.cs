@@ -4,5 +4,5 @@ public interface ICurrentUserProvider
 {
     long GetCurrentUserId();
     string UserTimeZone();
-    DateTime GetDateTime(DateTime utcDate);
+    DateTime ConvertDateTimeToUserTimeZone(DateTime utcDate);
 }
