@@ -1,4 +1,5 @@
 using MeetingScheduler.Data;
+using MeetingScheduler.Endpoints;
 using MeetingScheduler.Providers;
 using MeetingScheduler.User;
 using Microsoft.AspNetCore.Identity;
@@ -53,6 +54,8 @@ builder.Services.AddScoped<DbContext, AppDbContext>();
 var app = builder.Build();
 
 app.MapIdentityApi<AppUser>();
+app.MapUserEndpoints();
+app.MapTimezoneEndpoints();
 app.MapGet("/Hello", () => "Congratulations, You are authorizes").RequireAuthorization();
 
 app.UseSwagger();

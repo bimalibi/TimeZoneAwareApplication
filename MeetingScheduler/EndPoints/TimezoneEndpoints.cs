@@ -1,0 +1,37 @@
+﻿
+using MeetingScheduler.Contracts;
+using MeetingScheduler.Data;
+using MeetingScheduler.Entities;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace MeetingScheduler.Endpoints;
+
+public static class TimezoneEndpoints
+{
+    public static WebApplication MapTimezoneEndpoints(this WebApplication app)
+    {
+        app.MapGet("/api/timezones", () =>
+        {
+            var timeZones = TimeZoneInfo.GetSystemTimeZones();
+            return timeZones.Select(tz => tz);
+        }).WithTags("Timezones").RequireAuthorization();
+
+        app.MapPost("/api/timezone", async (AppDbContext dbContext, [FromBody] UserTimeZoneUpdatePayload payload) =>
+        {
+            await dbContext.UserTimeZones
+                .Where(ut => ut.UserId == payload.UserId).ExecuteDeleteAsync();
+
+            var userTimeZone = new UserTimeZone
+            {
+                UserId = payload.UserId,
+                TimeZone = payload.TimeZone
+            };
+            dbContext.UserTimeZones.Add(userTimeZone);
+            await dbContext.SaveChangesAsync();
+            return Results.Created($"/api/timezones/{userTimeZone.Id}", userTimeZone);
+        }).WithTags("Timezones").RequireAuthorization();
+
+        return app;
+    }
+}
