@@ -17,19 +17,6 @@ public static class UserEndpoints
             return Results.Ok(new { userId, userTimeZone });
         }).WithTags("User").RequireAuthorization();
 
-        app.MapPut("/api/users", async (AppDbContext dbContext, [FromForm] UserTimeZoneUpdatePayload payload) =>
-        {
-            return await dbContext.AppUsers
-                .Where(x => x.Id == payload.UserId)
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Email,
-                    x.UserName
-                })
-                .ToListAsync();
-        }).WithTags("User").RequireAuthorization();
-
         app.MapGet("/api/users", async (AppDbContext dbContext) =>
         {
             return await dbContext.AppUsers

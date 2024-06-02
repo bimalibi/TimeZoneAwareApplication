@@ -18,14 +18,14 @@ public static class TimezoneEndpoints
             return timeZones.Select(tz => tz);
         }).WithTags("Timezones").RequireAuthorization();
 
-        app.MapPost("/api/timezone", async (AppDbContext dbContext, [FromBody] UserTimeZoneUpdatePayload payload) =>
+        app.MapPost("/api/timezone", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] UserTimeZoneUpdatePayload payload) =>
         {
-            await dbContext.UserTimeZones
-                .Where(ut => ut.UserId == payload.UserId).ExecuteDeleteAsync();
+            var userId = currentUserProvider.GetCurrentUserId();
+            await dbContext.UserTimeZones.Where(ut => ut.UserId == userId).ExecuteDeleteAsync();
 
             var userTimeZone = new UserTimeZone
             {
-                UserId = payload.UserId,
+                UserId = userId,
                 TimeZone = payload.TimeZone
             };
             dbContext.UserTimeZones.Add(userTimeZone);
@@ -33,13 +33,6 @@ public static class TimezoneEndpoints
             return Results.Created($"/api/timezones/{userTimeZone.Id}", userTimeZone);
         }).WithTags("Timezones").RequireAuthorization();
         
-        app.MapGet("/api/timezone/{userId}", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider) =>
-        {
-            var userId = currentUserProvider.GetCurrentUserId();
-            var userTimeZone = await dbContext.UserTimeZones
-                .FirstOrDefaultAsync(ut => ut.UserId == userId);
-            return userTimeZone;
-        }).WithTags("Timezones").RequireAuthorization();
         return app;
     }
 }

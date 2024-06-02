@@ -10,6 +10,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
@@ -50,6 +60,7 @@ builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>().AddHttpC
 builder.Services.AddScoped<DbContext, AppDbContext>();
 
 var app = builder.Build();
+app.UseCors("AllowAll");
 
 app.MapIdentityApi<AppUser>();
 app.MapUserEndpoints();
