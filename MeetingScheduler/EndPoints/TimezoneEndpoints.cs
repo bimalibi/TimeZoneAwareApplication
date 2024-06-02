@@ -2,6 +2,7 @@
 using MeetingScheduler.Contracts;
 using MeetingScheduler.Data;
 using MeetingScheduler.Entities;
+using MeetingScheduler.Providers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,21 +18,21 @@ public static class TimezoneEndpoints
             return timeZones.Select(tz => tz);
         }).WithTags("Timezones").RequireAuthorization();
 
-        app.MapPost("/api/timezone", async (AppDbContext dbContext, [FromBody] UserTimeZoneUpdatePayload payload) =>
+        app.MapPost("/api/timezone", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] UserTimeZoneUpdatePayload payload) =>
         {
-            await dbContext.UserTimeZones
-                .Where(ut => ut.UserId == payload.UserId).ExecuteDeleteAsync();
+            var userId = currentUserProvider.GetCurrentUserId();
+            await dbContext.UserTimeZones.Where(ut => ut.UserId == userId).ExecuteDeleteAsync();
 
             var userTimeZone = new UserTimeZone
             {
-                UserId = payload.UserId,
+                UserId = userId,
                 TimeZone = payload.TimeZone
             };
             dbContext.UserTimeZones.Add(userTimeZone);
             await dbContext.SaveChangesAsync();
             return Results.Created($"/api/timezones/{userTimeZone.Id}", userTimeZone);
         }).WithTags("Timezones").RequireAuthorization();
-
+        
         return app;
     }
 }
