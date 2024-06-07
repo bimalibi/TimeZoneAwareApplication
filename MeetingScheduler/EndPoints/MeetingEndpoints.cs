@@ -42,13 +42,14 @@ public static class MeetingEndpoints
                 }).ToListAsync();
         }).WithTags("Meetings").RequireAuthorization();
 
-        app.MapPost("/api/meetings/Create", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingPayload meetingPayload) =>
+        app.MapPost("/api/meetings/Create", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, DateHelper dateHelper, [FromBody] MeetingPayload meetingPayload) =>
         {
+            var startDate = dateHelper.ToUtc(meetingPayload.StartDateTime);
             var meeting = new Meeting
             {
                 Title = meetingPayload.Title,
                 Description = meetingPayload.Description,
-                StartDateTime = meetingPayload.StartDateTime.TryParseUtc(),
+                StartDateTime = startDate!.Value,
                 CreatorId = currentUserProvider.GetCurrentUserId(),
                 InvitedUserId = meetingPayload.InvitedUserId
             };
