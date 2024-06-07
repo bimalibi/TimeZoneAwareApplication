@@ -1,5 +1,6 @@
 using MeetingScheduler.Data;
 using MeetingScheduler.Endpoints;
+using MeetingScheduler.Helper;
 using MeetingScheduler.Providers;
 using MeetingScheduler.User;
 using Microsoft.AspNetCore.Identity;
@@ -56,7 +57,8 @@ builder.Services.AddIdentityCore<AppUser>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddApiEndpoints();
 
-builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>().AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>()
+    .AddScoped<IDateHelper, DateHelper>().AddHttpContextAccessor();
 builder.Services.AddScoped<DbContext, AppDbContext>();
 
 var app = builder.Build();

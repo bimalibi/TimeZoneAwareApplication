@@ -1,18 +1,14 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using System.Security.Claims;
-using MeetingScheduler.Data;
+﻿using System.Security.Claims;
 
 namespace MeetingScheduler.Providers;
 
 public class CurrentUserProvider : ICurrentUserProvider
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly AppDbContext _dbContext;
 
-    public CurrentUserProvider(IHttpContextAccessor httpContextAccessor, AppDbContext dbContext)
+    public CurrentUserProvider(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
-        _dbContext = dbContext;
     }
 
     public long GetCurrentUserId()
@@ -24,35 +20,5 @@ public class CurrentUserProvider : ICurrentUserProvider
         }
 
         return long.Parse(userId);
-    }
-
-    public string UserTimeZone()
-    {
-        var userId = GetCurrentUserId();
-        var userTimeZone = _dbContext.UserTimeZones.FirstOrDefault(x => x.UserId == userId);
-        return userTimeZone?.TimeZone ?? "UTC";
-    }
-
-
-    public DateTime ConvertDateTimeToUserTimeZone(DateTime utcDate)
-    {
-        var userTimeZone = UserTimeZone();
-        var localDateTime = GetDateTimeBasedOn(userTimeZone, utcDate);
-        return DateTime.Parse(localDateTime);
-    }
-
-    public DateTime ConvertDateTimeToUserTimeZone(long userId, DateTime utcDate)
-    {
-        var userTimeZone = _dbContext.UserTimeZones.FirstOrDefault(x => x.UserId == userId);
-        if (userTimeZone == null) return utcDate;
-        var localDateTime = GetDateTimeBasedOn(userTimeZone.TimeZone, utcDate);
-        return DateTime.Parse(localDateTime);
-    }
-
-    private string GetDateTimeBasedOn(string timeZone, DateTime utcDate)
-    {
-        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
-        var localDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDate, userTimeZone);
-        return localDateTime.ToString("yyyy-MM-dd HH:mm:ss");
     }
 }

@@ -2,6 +2,7 @@ using MeetingScheduler.Contracts;
 using MeetingScheduler.Data;
 using MeetingScheduler.Entities;
 using MeetingScheduler.Extensions;
+using MeetingScheduler.Helper;
 using MeetingScheduler.Providers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,19 +13,19 @@ public static class MeetingEndpoints
 {
     public static WebApplication MapMeetingEndpoints(this WebApplication app)
     {
-        app.MapPost("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingFilterPayload payload) =>
+        app.MapPost("/api/meetings", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, IDateHelper dateHelper, [FromBody] MeetingFilterPayload payload) =>
         {
-            var currentUser = currentUserProvider.GetCurrentUserId();
+            var currentUserId = currentUserProvider.GetCurrentUserId();
+            var startDate = dateHelper.ToUtc(payload.StartDateTime);
 
-            var query = await (from m in dbContext.Meetings
+            return await (from m in dbContext.Meetings
                 join iu in dbContext.AppUsers on m.InvitedUserId equals iu.Id
                 join cu in dbContext.AppUsers on m.CreatorId equals cu.Id
-               join iutj in dbContext.UserTimeZones on m.InvitedUserId equals iutj.UserId into iutjGroup
-                from iutj in iutjGroup.DefaultIfEmpty()
+                join iutj in dbContext.UserTimeZones on m.InvitedUserId equals iutj.UserId
                 where (payload.Title == null || m.Title.Contains(payload.Title)) &&
                       (payload.Description == null || m.Description.Contains(payload.Description)) &&
-                      (payload.StartDateTime == null || m.StartDateTime >= payload.StartDateTime.Value.TryParseUtc()) &&
-                      (m.CreatorId == currentUser || m.InvitedUserId == currentUser)
+                      (startDate == null || m.StartDateTime.Date == startDate.Value.Date) &&
+                      (m.CreatorId == currentUserId || m.InvitedUserId == currentUserId)
                 select new
                 {
                     Id = m.Id,
@@ -35,21 +36,10 @@ public static class MeetingEndpoints
                     InvitedId = iu.Id,
                     CreatorId = cu.Id,
                     Creator = cu.UserName,
-                    InvitedUserTimeZone = iutj.TimeZone
+                    InvitedUserTimeZone = iutj.TimeZone,
+                    CreatorDateTime = dateHelper.ToLocal(m.CreatorId, m.StartDateTime),
+                    InvitedDateTime = dateHelper.ToLocal(m.InvitedUserId, m.StartDateTime)
                 }).ToListAsync();
-
-
-            return query.Select(x => new
-            {
-                Id = x.Id,
-                Title = x.Title,
-                Description = x.Description,
-                Creator = x.Creator,
-                Invited = x.Invited,
-                x.InvitedUserTimeZone,
-                CreatorDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.CreatorId,x.DateTime),
-                InvitedDateTime = currentUserProvider.ConvertDateTimeToUserTimeZone(x.InvitedId, x.DateTime)
-            });
         }).WithTags("Meetings").RequireAuthorization();
 
         app.MapPost("/api/meetings/Create", async (AppDbContext dbContext, ICurrentUserProvider currentUserProvider, [FromBody] MeetingPayload meetingPayload) =>
